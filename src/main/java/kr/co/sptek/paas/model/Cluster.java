@@ -1,9 +1,18 @@
 package kr.co.sptek.paas.model;
 
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+
+@ApiModel("k8s Cluster Á¤º¸")
 public class Cluster {
 
+	@ApiModelProperty(value="name", required=true)
 	private String name;	
+	
+	@ApiModelProperty(value="nodes", required=true)
 	private Node[] nodes;
+	
+	@ApiModelProperty(value="provider", required=true)
 	private String provider;	
 	
 	public String getName() {
