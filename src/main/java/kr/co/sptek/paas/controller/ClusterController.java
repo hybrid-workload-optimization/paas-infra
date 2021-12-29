@@ -12,8 +12,8 @@ import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 
 @RestController
-//@Api(tags = {"Cluster"})
-//@RequestMapping("/cluster")
+@Api(tags = {"Cluster"})
+@RequestMapping("/cluster")
 public class ClusterController {
 
 	@ApiOperation(value="Cluster »ý¼º")
