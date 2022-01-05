@@ -1,5 +1,7 @@
 package kr.co.sptek.paas.model;
 
+import java.util.List;
+
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
@@ -12,8 +14,8 @@ public class Node {
 	@ApiModelProperty(value="ip", required=true)
 	private String ip;
 	
-	@ApiModelProperty(value="nodeType", required=true)
-	private NodeType nodeType;
+	@ApiModelProperty(value="nodeTypes", required=true)
+	private List<NodeType> nodeTypes;
 	
 
 	public String getName() {
@@ -31,12 +33,13 @@ public class Node {
 	public void setIp(String ip) {
 		this.ip = ip;
 	}
-
-	public NodeType getNodeType() {
-		return nodeType;
+	
+	public List<NodeType> getNodeTypes() {
+		return nodeTypes;
 	}
 
-	public void setNodeType(NodeType nodeType) {
-		this.nodeType = nodeType;
+	public void setNodeTypes(List<NodeType> nodeTypes) {
+		this.nodeTypes = nodeTypes;
 	}
+	
 }
