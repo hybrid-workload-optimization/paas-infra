@@ -15,6 +15,7 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Service;
 
 import kr.co.sptek.paas.model.Cluster;
+import kr.co.sptek.paas.model.ProcessResult;
 import kr.co.sptek.paas.utils.CompressUtil;
 import kr.co.sptek.paas.utils.FileUtils;
 
@@ -28,11 +29,14 @@ public class KubesprayService {
 	@Autowired
 	private InventoryService inventoryService;
 
+	@Autowired
+	private ProcessService processService;
+
 	public boolean createCluster(Cluster cluster) throws IOException {
 		logger.info("kubespray cluster creation start.");
 		
-		
-		File kubesprayHome = new File(configService.getKubesprayBinHome());
+		String kubesprayBinHome = configService.getKubesprayBinHome();
+		File kubesprayHome = new File(kubesprayBinHome);
 		boolean isReady = kubesprayHome.isDirectory();
 		if(!isReady) {
 			logger.info("kubespray not installed.");
@@ -54,12 +58,34 @@ public class KubesprayService {
 		
 		FileUtils.fileWrite(inventoryFile, inventoryContents);
 		
+		String pingCommnad = genPingCommand(inventoryFile.getAbsolutePath());
+		logger.info("Ping test start.");
+		logger.info("Ping command: {}", pingCommnad);
+		
+		ProcessResult result = processService.process(pingCommnad, kubesprayBinHome);
+		logger.info("Ping test result - exit code: {}", result.getExitCode());
+		logger.info("Ping test result - message: {}", result.getMessage());
+		
+		
+		if(result.getExitCode() != 0) {
+			logger.info("Ping test error.");
+			return false;
+		}
+		
 		
 		
 		
 		return true;
 	}
 	
+	/**
+	 * Inventory Ping command 持失馬食 鋼発.
+	 * @param inventoryFilePath
+	 * @return
+	 */
+	private String genPingCommand(String inventoryFilePath) {
+		return String.format("ansible all -i %s -m ping", inventoryFilePath);
+	}
 	
 	
 	
