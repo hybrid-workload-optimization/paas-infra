@@ -5,7 +5,7 @@ import java.util.List;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
-@ApiModel("Node Á¤º¸")
+@ApiModel("Node  ì •ë³´")
 public class Node {
 	
 	@ApiModelProperty(value="name", required=true)

@@ -1,0 +1,10 @@
+server:
+  port: 8087
+  
+spring:
+  application:
+    name: paas-portal
+    
+    
+app:
+  home: D:/paas-portal

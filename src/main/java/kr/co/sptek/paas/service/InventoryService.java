@@ -48,16 +48,21 @@ public class InventoryService {
 			}
 			
 			if(types.contains(NodeType.network)) {
-				append(calicoSection, host);
+				//append(calicoSection, host);
 			}
 		}
 		
 		StringBuffer sb = new StringBuffer();
 		sb.append(allSection);
+		append(sb, "");
 		sb.append(kubeControlSection);
+		append(sb, "");
 		sb.append(etcdSection);
+		append(sb, "");
 		sb.append(kubeNodeSection);
+		append(sb, "");
 		sb.append(calicoSection);
+		append(sb, "");
 		append(sb, "[k8s_cluster:children]");
 		append(sb, "kube_control_plane");
 		append(sb, "kube_node");

@@ -3,7 +3,7 @@ package kr.co.sptek.paas.model;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
-@ApiModel("k8s Cluster Á¤º¸")
+@ApiModel("k8s Cluster ì •ë³´")
 public class Cluster {
 
 	@ApiModelProperty(value="name", required=true)

@@ -8,31 +8,38 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Service;
 
-import kr.co.sptek.paas.model.Cluster;
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+
+import kr.co.sptek.paas.model.CreateClusterInfo;
+import kr.co.sptek.paas.model.NodeCheckResult;
 import kr.co.sptek.paas.model.ProcessResult;
 import kr.co.sptek.paas.utils.CompressUtil;
 import kr.co.sptek.paas.utils.FileUtils;
 
 @Service
-public class KubesprayService {	
+public class KubesprayService implements IClusterService {	
 	private static Logger logger = LoggerFactory.getLogger(KubesprayService.class);
 	
-	@Autowired
 	private ConfigurationService configService;
-	
-	@Autowired
 	private InventoryService inventoryService;
-
-	@Autowired
 	private ProcessService processService;
-
-	public boolean createCluster(Cluster cluster) throws IOException {
+	
+	public KubesprayService(ConfigurationService configService) {
+		this.configService = configService;
+		this.inventoryService = new InventoryService();
+		this.processService = new ProcessService();
+	}
+	
+	
+	@Override
+	public boolean createCluster(CreateClusterInfo clusterInfo) {
 		logger.info("kubespray cluster creation start.");
 		
 		String kubesprayBinHome = configService.getKubesprayBinHome();
@@ -42,27 +49,48 @@ public class KubesprayService {
 			logger.info("kubespray not installed.");
 			
 			String kubesprayVersion = configService.getKubesprayVersion();
-			isReady = installKubespray(kubesprayVersion);
+			try {
+				isReady = installKubespray(kubesprayVersion);
+			} catch (IOException e) {
+				logger.error("Kubespray install fail.");
+				logger.error("", e);
+				return false;
+			}
 		}
 		
 		if(!isReady) {
-			logger.error("Kubespray cluster creation fail - kubespray°¡ ¼³Ä¡µÇ¾î ÀÖÁö ¾Ê½À´Ï´Ù.");
+			logger.error("Kubespray cluster creation fail - kubesprayê°€ ì„¤ì¹˜ ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤.");
 			return false;
 		}
 		
-		String clusterName = cluster.getName();
-		String inventoryContents = inventoryService.genInventory(cluster);
+		String clusterName = clusterInfo.getName();
+		String inventoryContents = inventoryService.genInventory(clusterInfo);
 		String inventoryHome = configService.getKubesprayInventoryHome();
 		File inventoryDir = new File(inventoryHome, clusterName);
 		File inventoryFile = new File(inventoryDir, "inventory.ini");
 		
-		FileUtils.fileWrite(inventoryFile, inventoryContents);
+		try {
+			logger.info("inventory.ini ìƒì„± ì‹œì‘");
+			FileUtils.fileWrite(inventoryFile, inventoryContents);
+			logger.info("inventory.ini ìƒì„± ì¢…ë£Œ");
+		} catch (IOException e) {
+			logger.error("inventory.ini ìƒì„± ì‹¤íŒ¨");
+			logger.error("", e);
+			return false;
+		}
 		
 		String pingCommnad = genPingCommand(inventoryFile.getAbsolutePath());
 		logger.info("Ping test start.");
 		logger.info("Ping command: {}", pingCommnad);
 		
-		ProcessResult result = processService.process(pingCommnad, kubesprayBinHome);
+		ProcessResult result = null;
+		try {
+			result = processService.process(pingCommnad, kubesprayBinHome, new String[] {"[WARNING]:"});
+		} catch (IOException e) {
+			logger.error("Node ping í…ŒìŠ¤íŠ¸ ì‹¤íŒ¨");
+			logger.error("", e);
+			return false;
+		}
 		logger.info("Ping test result - exit code: {}", result.getExitCode());
 		logger.info("Ping test result - message: {}", result.getMessage());
 		
@@ -73,13 +101,95 @@ public class KubesprayService {
 		}
 		
 		
+		List<NodeCheckResult> resultList = parserPingTest(result);
+		for(NodeCheckResult r : resultList) {
+			if(!r.isStatus()) {
+				//í•˜ë‚˜ì˜ ë…¸ë“œë¼ë„ ì¤€ë¹„ê°€ ì•ˆë˜ìˆìœ¼ë©´ ì¤‘ì§€
+				return false;
+			}
+		}
+		
+		
+		//í´ëŸ¬ìŠ¤í„° ìƒì„± ì»¤ë§¨ë“œ ì‹¤í–‰
+		String createCommnad = genCreateClusterCommand(inventoryFile.getAbsolutePath(), "root");
+		logger.info("Create cluster start.");
+		logger.info("Create cluster command: {}", createCommnad);
 		
 		
 		return true;
 	}
+
+	
+	
+	private List<NodeCheckResult> parserPingTest(ProcessResult result) {
+		String message = result.getMessage();
+		List<NodeCheckResult> list = new ArrayList<>();
+		int index = 0;
+		while(true) {
+			
+			//ì‹œì‘ ì¸ë±ìŠ¤
+			int p = message.indexOf("=>", index);
+			if(p < 0) {
+				break;
+			}			
+			
+			//ì¢…ë£Œ ì¸ë±ìŠ¤
+			int n = message.indexOf("=>", p + 2);
+			if(n < 0) {
+				n = message.length();
+			}
+			String sub = message.substring(index, n);			
+			int e = sub.lastIndexOf("}") + 1;
+			
+			
+			String nodeBody = sub.substring(0, e);
+			
+			String[] sp = nodeBody.split("=>");
+			if(sp.length == 2) {
+				String nodeInfo = sp[0].replaceAll("\\s+","");
+				String details = sp[1];
+				//System.out.println(details);
+				
+				
+				String[] nodeArr = nodeInfo.split("\\|");
+				String nodeName = nodeArr[0];
+				//String nodeStatus = nodeArr[1];
+				
+				
+				JsonObject jsonObject = new Gson().fromJson(details, JsonObject.class);
+				JsonElement pingElement = jsonObject.get("ping");
+				boolean ping = false;
+				String msg = null;
+				if(pingElement != null) {
+					String pingResult = pingElement.getAsString();
+					ping = pingResult.equals("pong");
+				} else {
+					JsonElement msgElement = jsonObject.get("msg");
+					if(msgElement != null) {
+						//í•‘ í…ŒìŠ¤íŠ¸ ì—ëŸ¬ì¸ ê²½ìš° ì—ëŸ¬ ë©”ì‹œì§€.
+						msg = msgElement.getAsString();
+					}
+				}
+				
+				
+				NodeCheckResult checkResult = new NodeCheckResult();
+				checkResult.setNodeName(nodeName);
+				checkResult.setStatus(ping);
+				checkResult.setMessage(msg);
+				list.add(checkResult);
+			}
+			
+			index = index + nodeBody.length();
+		}
+		
+		return list;
+	}
+	
+	
+	
 	
 	/**
-	 * Inventory Ping command »ı¼ºÇÏ¿© ¹İÈ¯.
+	 * Inventory Ping command
 	 * @param inventoryFilePath
 	 * @return
 	 */
@@ -87,10 +197,20 @@ public class KubesprayService {
 		return String.format("ansible all -i %s -m ping", inventoryFilePath);
 	}
 	
+	/**
+	 * Create Cluster Command
+	 * @param inventoryFilePath
+	 * @param userName
+	 * @return
+	 */
+	private String genCreateClusterCommand(String inventoryFilePath, String userName) {
+		return String.format("ansible-playbook -i %s -become --become-user=%s cluster.yml", inventoryFilePath, userName);
+	}
+	
 	
 	
 	/**
-	 * kubespray°¡ ¼³Ä¡ µÇ¾î ÀÖÁö ¾ÊÀ» °æ¿ì ¼³Ä¡
+	 * kubespray ì„¤ì¹˜
 	 * @return
 	 */
 	public boolean installKubespray(String version) throws IOException {
@@ -106,7 +226,7 @@ public class KubesprayService {
 			try {
 				FileUtils.copy(is, zipFile);
 			} catch (IOException e) {
-				logger.error("kubespray install fail - ÆÄÀÏ º¹»ç ¿À·ù. target path:{}", zipFile.getAbsolutePath());
+				logger.error("kubespray install fail - íŒŒì¼ ë³µì‚¬ ì‹¤íŒ¨. target path:{}", zipFile.getAbsolutePath());
 				logger.error("", e);
 				return false;
 			}
@@ -116,7 +236,7 @@ public class KubesprayService {
 			try {
 				compressUtil.unzip(zipFile);
 			} catch (IOException e) {
-				logger.error("kubespray install fail - ¾ĞÃà ÆÄÀÏ ÇØÁ¦ ¿À·ù. target path:{}", zipFile.getAbsolutePath());
+				logger.error("kubespray install fail - ì••ì¶• í•´ì œ ì‹¤íŒ¨. target path:{}", zipFile.getAbsolutePath());
 				logger.error("", e);
 				return false;
 			}
@@ -128,7 +248,7 @@ public class KubesprayService {
 	}
 	
 	/**
-	 * kubespray ¹öÀü ¸®ÅÏ.
+	 * kubespray ë²„ì „ ë°˜í™˜.
 	 * @return
 	 * @throws IOException
 	 */

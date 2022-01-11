@@ -15,7 +15,7 @@ import kr.co.sptek.paas.model.ProcessResult;
 public class ProcessService {	
 	private static Logger logger = LoggerFactory.getLogger(ProcessService.class);
 
-	public ProcessResult process(String command, String dir) throws IOException {		
+	public ProcessResult process(String command, String dir, String[] excludeWord) throws IOException {		
 		ProcessBuilder builder = new ProcessBuilder();
 		boolean isWindows = System.getProperty("os.name").toLowerCase().startsWith("windows");
 		if (isWindows) {
@@ -30,6 +30,14 @@ public class ProcessService {
 		StringBuffer sb = new StringBuffer();
 		String line = null;
 		while ((line = reader.readLine()) != null) {
+			if(excludeWord != null) {
+				for(String word : excludeWord) {
+					if(line.contains(word)) {
+						continue;
+					}
+				}
+			}
+			
 			sb.append(line);
 			sb.append("\n");
 		}

@@ -1,18 +1,22 @@
 package kr.co.sptek.paas.service;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
 public class ConfigurationService {
 	public static final String KUBESPRAY_DIR_NAME = "kubespray";
 	public static final String KUBESPRAY_INVENTORY_DIR_NAME = "inventory";
+	
+	@Value("${app.home}")
+	private String HOME_DIR;
 
 	/**
-	 * Portal home dir ∞Ê∑Œ ∏Æ≈œ.
+	 * Portal home dir Î∞òÌôò.
 	 * @return
 	 */
 	public String getHome() {
-		String home = "D:/paas-portal";
+		String home = HOME_DIR;
 		if(!home.endsWith("/")) {
 			home+="/";
 		}
@@ -20,7 +24,7 @@ public class ConfigurationService {
 	}
 	
 	/**
-	 * Kubespray πŸ¿Ã≥ ∏Æ Ω««‡ ∞Ê∑Œ ∏Æ≈œ.
+	 * Kubespray Ïã§Ìñâ Ìè¥Îçî Î¶¨ÌÑ¥.
 	 * @return
 	 */
 	public String getKubesprayBinHome() {
@@ -30,7 +34,7 @@ public class ConfigurationService {
 	}
 	
 	/**
-	 * Kubespray πŸ¿Ã≥ ∏Æ Ω««‡ ∞Ê∑Œ ∏Æ≈œ.
+	 * Kubespray Ïù∏Î≤§ÌÜ†Î¶¨ Ìè¥Îçî Î∞òÌôò.
 	 * @return
 	 */
 	public String getKubesprayInventoryHome() {
@@ -39,7 +43,7 @@ public class ConfigurationService {
 	}
 	
 	/**
-	 * Kubespray home ∞Ê∑Œ ∏Æ≈œ.
+	 * Kubespray home Í≤ΩÎ°ú Î∞òÌôò.
 	 * @return
 	 */
 	public String getKubesprayHome() {
@@ -47,7 +51,7 @@ public class ConfigurationService {
 	}
 	
 	/**
-	 * ªÁøÎ«“ kubespray version ∏Æ≈œ.
+	 * ÏÑ§Ï†ïÎêú kubespray version Î¶¨ÌÑ¥.
 	 * @return
 	 */
 	public String getKubesprayVersion() {
