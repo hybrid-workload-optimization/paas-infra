@@ -18,7 +18,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-import kr.co.sptek.paas.model.CreateClusterInfo;
+import kr.co.sptek.paas.model.ClusterInfo;
 import kr.co.sptek.paas.model.NodeCheckResult;
 import kr.co.sptek.paas.model.ProcessResult;
 import kr.co.sptek.paas.service.ConfigurationService;
@@ -30,20 +30,40 @@ import kr.co.sptek.paas.utils.FileUtils;
 public class KubesprayService implements IClusterService {	
 	private static Logger logger = LoggerFactory.getLogger(KubesprayService.class);
 	
+	private static final int CREATE = 0;
+	private static final int SCALE = 1;
+	private static final int DELETE = 2;
+	
 	private ConfigurationService configService;
-	private InventoryService inventoryService;
 	private ExecProcessAsync asyncService;
 	
 	public KubesprayService(ConfigurationService configService) {
 		this.configService = configService;
-		this.inventoryService = new InventoryService();
 		this.asyncService = new ExecProcessAsync();
 	}
 	
 	
 	@Override
-	public ProcessResult createCluster(CreateClusterInfo clusterInfo) {
-		logger.info("kubespray cluster creation start.");
+	public ProcessResult createCluster(ClusterInfo clusterInfo) {
+		logger.info("Kubespray - Cluster 생성 시작.");
+		return kubesprayJob(clusterInfo, CREATE);
+	}
+	
+	@Override
+	public ProcessResult deleteCluster(ClusterInfo clusterInfo) {
+		logger.info("Kubespray - Cluster 삭제 시작.");
+		return kubesprayJob(clusterInfo, DELETE);
+	}
+
+
+	@Override
+	public ProcessResult updateScale(ClusterInfo clusterInfo) {
+		logger.info("Kubespray - Cluster scale 업데이트 시작.");
+		return kubesprayJob(clusterInfo, SCALE);
+	}
+	
+	private ProcessResult kubesprayJob(ClusterInfo clusterInfo, int jobType) {
+		logger.info("kubespray cluster job start.");
 		
 		String kubesprayBinHome = configService.getKubesprayBinHome();
 		File kubesprayHome = new File(kubesprayBinHome);
@@ -62,12 +82,13 @@ public class KubesprayService implements IClusterService {
 		}
 		
 		if(!isReady) {
-			logger.error("Kubespray cluster creation fail - kubespray가 설치 되지 않았습니다.");
-			return ProcessResult.errorMessage("Kubespray cluster creation fail - kubespray가 설치 되지 않았습니다.");
+			logger.error("Kubespray cluster job fail - kubespray가 설치 되지 않았습니다.");
+			return ProcessResult.errorMessage("Kubespray cluster job fail - kubespray가 설치 되지 않았습니다.");
 		}
 		
+		InventoryGenerator generator = new InventoryGenerator();
 		String clusterName = clusterInfo.getClusterName();
-		String inventoryContents = inventoryService.genInventory(clusterInfo);
+		String inventoryContents = generator.genInventory(clusterInfo);
 		String inventoryHome = configService.getKubesprayInventoryHome();
 		File inventoryDir = new File(inventoryHome, clusterName);
 		File inventoryFile = new File(inventoryDir, "inventory.ini");
@@ -82,28 +103,47 @@ public class KubesprayService implements IClusterService {
 			return ProcessResult.errorMessage("inventory.ini 생성 실패.");
 		}
 		
+		/*
 		//핑테스트.
 		ProcessResult pingResult = pingTest(kubesprayBinHome, inventoryFile);
 		if(pingResult.getExitCode() != 0) {
 			return pingResult;
 		}
+		*/
 		
 		//클러스터 생성 커맨드 실행
-		String createCommnad = genCreateClusterCommand(inventoryFile.getAbsolutePath(), "root");
-		logger.info("Create cluster start.");
-		logger.info("Create cluster command: {}", createCommnad);
+		String command = null;
+		
+		
+		switch (jobType) {
+		case CREATE:
+			command = genCreateClusterCommand(inventoryFile.getAbsolutePath(), clusterInfo.getUserName());
+			break;
+		case SCALE:
+			command = genClusterScaleCommand(inventoryFile.getAbsolutePath(), clusterInfo.getUserName());
+			break;
+		case DELETE:
+			command = genClusterResetCommand(inventoryFile.getAbsolutePath(), clusterInfo.getUserName());
+			break;
+		}
+		
+		System.out.println(command);
+		
+		
+		logger.info("cluster process start.");
+		logger.info("cluster process command: {}", command);
 		
 		//registerListener(System.out::println);
 		int exitCode = -1;
 		try {
-			exitCode = asyncService.process(createCommnad, kubesprayBinHome);
+			exitCode = asyncService.process(command, kubesprayBinHome);
 		} catch (IOException e) {
 			logger.error("", e);
 			
 		}
 		
 		if(exitCode != 0) {
-			ProcessResult.errorMessage("Cluster 생성 프로세스 실행 실패.");
+			return ProcessResult.errorMessage("Cluster job 프로세스 실행 실패.");
 		}
 		return ProcessResult.successMessage();
 	}
@@ -146,23 +186,14 @@ public class KubesprayService implements IClusterService {
 		return ProcessResult.successMessage();
 	}
 	
-	@Override
-	public ProcessResult deleteCluster() {
-		return null;
-	}
-
-
-	@Override
-	public ProcessResult updateScale(CreateClusterInfo clusterInfo) {
-		return null;
-	}
+	
 
 	
 	
 	private List<NodeCheckResult> parserPingTest(ProcessResult result) {
 		String message = result.getMessage();
 		List<NodeCheckResult> list = new ArrayList<>();
-		int index = 0;
+		int index = 0;           
 		while(true) {
 			
 			//시작 인덱스
@@ -245,6 +276,26 @@ public class KubesprayService implements IClusterService {
 		return String.format("ansible-playbook -i %s -become --become-user=%s cluster.yml", inventoryFilePath, userName);
 	}
 	
+	
+	/**
+	 * Cluster Scale 조정 커맨드
+	 * @param inventoryFilePath
+	 * @param userName
+	 * @return
+	 */
+	private String genClusterScaleCommand(String inventoryFilePath, String userName) {
+		return String.format("ansible-playbook -i %s -become --become-user=%s scale.yml", inventoryFilePath, userName);
+	}
+	
+	/**
+	 * Cluster Reset 커맨드
+	 * @param inventoryFilePath
+	 * @param userName
+	 * @return
+	 */
+	private String genClusterResetCommand(String inventoryFilePath, String userName) {
+		return String.format("ansible-playbook -i %s -become --become-user=%s reset.yml", inventoryFilePath, userName);
+	}
 	
 	
 	/**

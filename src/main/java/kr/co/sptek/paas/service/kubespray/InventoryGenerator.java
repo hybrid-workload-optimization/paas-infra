@@ -8,7 +8,7 @@ import kr.co.sptek.paas.model.Cluster;
 import kr.co.sptek.paas.model.Node;
 import kr.co.sptek.paas.model.NodeType;
 
-public class InventoryService {
+public class InventoryGenerator {
 
 	public String genInventory(Cluster cluster) {
 		

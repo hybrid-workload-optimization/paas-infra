@@ -1,6 +1,6 @@
 package kr.co.sptek.paas.model;
 
-public class CreateClusterInfo extends Cluster {
+public class ClusterInfo extends Cluster {
 
 	private String userName;
 

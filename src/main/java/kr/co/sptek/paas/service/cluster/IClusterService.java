@@ -2,7 +2,7 @@ package kr.co.sptek.paas.service.cluster;
 
 import java.util.function.Consumer;
 
-import kr.co.sptek.paas.model.CreateClusterInfo;
+import kr.co.sptek.paas.model.ClusterInfo;
 import kr.co.sptek.paas.model.ProcessResult;
 
 public interface IClusterService {
@@ -12,20 +12,20 @@ public interface IClusterService {
 	 * @param cluster
 	 * @return
 	 */
-	public ProcessResult createCluster(CreateClusterInfo clusterInfo);
+	public ProcessResult createCluster(ClusterInfo clusterInfo);
 	
 	/**
 	 * 클러스터 삭제.
 	 * @return
 	 */
-	public ProcessResult deleteCluster();
+	public ProcessResult deleteCluster(ClusterInfo clusterInfo);
 	
 	
 	/**
 	 * 클러스터 스케일 조정.
 	 * @return
 	 */
-	public ProcessResult updateScale(CreateClusterInfo clusterInfo);
+	public ProcessResult updateScale(ClusterInfo clusterInfo);
 	
 	
 	

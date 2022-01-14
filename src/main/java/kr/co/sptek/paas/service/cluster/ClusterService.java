@@ -11,7 +11,7 @@ import java.util.function.Consumer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import kr.co.sptek.paas.model.CreateClusterInfo;
+import kr.co.sptek.paas.model.ClusterInfo;
 import kr.co.sptek.paas.model.ProcessResult;
 import kr.co.sptek.paas.service.ConfigurationService;
 import kr.co.sptek.paas.service.kubespray.KubesprayService;
@@ -40,7 +40,7 @@ public class ClusterService {
 	 * @param clusterInfo
 	 * @return
 	 */
-	public ProcessResult createCluster(CreateClusterInfo clusterInfo) {
+	public ProcessResult createCluster(ClusterInfo clusterInfo) {
 		return clusterJob(clusterInfo, CREATE);
 	}
 	
@@ -49,8 +49,17 @@ public class ClusterService {
 	 * @param clusterInfo
 	 * @return
 	 */
-	public ProcessResult updateScale(CreateClusterInfo clusterInfo) {
+	public ProcessResult updateScale(ClusterInfo clusterInfo) {
 		return clusterJob(clusterInfo, SCALE);
+	}
+	
+	/**
+	 * 클러스터 삭제.
+	 * @param clusterName
+	 * @return
+	 */
+	public ProcessResult deleteCluster(ClusterInfo clusterInfo) {
+		return clusterJob(clusterInfo, DELETE);
 	}
 	
 	/**
@@ -59,7 +68,7 @@ public class ClusterService {
 	 * @param jobType
 	 * @return
 	 */
-	private ProcessResult clusterJob(CreateClusterInfo clusterInfo, int jobType) {
+	private ProcessResult clusterJob(ClusterInfo clusterInfo, int jobType) {
 		String clusterName = clusterInfo.getClusterName();
 		String provider = clusterInfo.getProvider();
 		
@@ -77,6 +86,9 @@ public class ClusterService {
 		case SCALE:
 			result = creater.updateScale(clusterInfo);
 			break;
+		case DELETE:
+			result = creater.deleteCluster(clusterInfo);
+			break;
 		}
         getClusterProcessMap().remove(clusterName);
 		return result;
@@ -91,20 +103,14 @@ public class ClusterService {
 		IClusterService creater = null;
 		if(isSupportedClusterAPI(provider)) {
 			//Cluster API 연동 클래스 등록.
+			
 		} else {
 			creater = new KubesprayService(configService);
 		}
 		return creater;
 	}
 	
-	/**
-	 * 클러스터 삭제.
-	 * @param clusterName
-	 * @return
-	 */
-	public ProcessResult deleteCluster(String clusterName) {
-		return null;
-	}
+	
 	
 	
 	/**
