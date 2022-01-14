@@ -1,10 +1,11 @@
-package kr.co.sptek.paas.service;
+package kr.co.sptek.paas.service.kubespray;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +21,8 @@ import com.google.gson.JsonObject;
 import kr.co.sptek.paas.model.CreateClusterInfo;
 import kr.co.sptek.paas.model.NodeCheckResult;
 import kr.co.sptek.paas.model.ProcessResult;
+import kr.co.sptek.paas.service.ConfigurationService;
+import kr.co.sptek.paas.service.cluster.IClusterService;
 import kr.co.sptek.paas.utils.CompressUtil;
 import kr.co.sptek.paas.utils.FileUtils;
 
@@ -29,17 +32,17 @@ public class KubesprayService implements IClusterService {
 	
 	private ConfigurationService configService;
 	private InventoryService inventoryService;
-	private ProcessService processService;
+	private ExecProcessAsync asyncService;
 	
 	public KubesprayService(ConfigurationService configService) {
 		this.configService = configService;
 		this.inventoryService = new InventoryService();
-		this.processService = new ProcessService();
+		this.asyncService = new ExecProcessAsync();
 	}
 	
 	
 	@Override
-	public boolean createCluster(CreateClusterInfo clusterInfo) {
+	public ProcessResult createCluster(CreateClusterInfo clusterInfo) {
 		logger.info("kubespray cluster creation start.");
 		
 		String kubesprayBinHome = configService.getKubesprayBinHome();
@@ -54,16 +57,16 @@ public class KubesprayService implements IClusterService {
 			} catch (IOException e) {
 				logger.error("Kubespray install fail.");
 				logger.error("", e);
-				return false;
+				return ProcessResult.errorMessage("Kubespray install fail.");
 			}
 		}
 		
 		if(!isReady) {
 			logger.error("Kubespray cluster creation fail - kubespray가 설치 되지 않았습니다.");
-			return false;
+			return ProcessResult.errorMessage("Kubespray cluster creation fail - kubespray가 설치 되지 않았습니다.");
 		}
 		
-		String clusterName = clusterInfo.getName();
+		String clusterName = clusterInfo.getClusterName();
 		String inventoryContents = inventoryService.genInventory(clusterInfo);
 		String inventoryHome = configService.getKubesprayInventoryHome();
 		File inventoryDir = new File(inventoryHome, clusterName);
@@ -76,20 +79,52 @@ public class KubesprayService implements IClusterService {
 		} catch (IOException e) {
 			logger.error("inventory.ini 생성 실패");
 			logger.error("", e);
-			return false;
+			return ProcessResult.errorMessage("inventory.ini 생성 실패.");
 		}
 		
+		//핑테스트.
+		ProcessResult pingResult = pingTest(kubesprayBinHome, inventoryFile);
+		if(pingResult.getExitCode() != 0) {
+			return pingResult;
+		}
+		
+		//클러스터 생성 커맨드 실행
+		String createCommnad = genCreateClusterCommand(inventoryFile.getAbsolutePath(), "root");
+		logger.info("Create cluster start.");
+		logger.info("Create cluster command: {}", createCommnad);
+		
+		//registerListener(System.out::println);
+		int exitCode = -1;
+		try {
+			exitCode = asyncService.process(createCommnad, kubesprayBinHome);
+		} catch (IOException e) {
+			logger.error("", e);
+			
+		}
+		
+		if(exitCode != 0) {
+			ProcessResult.errorMessage("Cluster 생성 프로세스 실행 실패.");
+		}
+		return ProcessResult.successMessage();
+	}
+	
+	/**
+	 * 노드 확인을 위해 핑 테스트
+	 * @return
+	 */
+	public ProcessResult pingTest(String kubesprayBinHome, File inventoryFile) {
 		String pingCommnad = genPingCommand(inventoryFile.getAbsolutePath());
 		logger.info("Ping test start.");
 		logger.info("Ping command: {}", pingCommnad);
 		
 		ProcessResult result = null;
 		try {
+			ExecProcess processService = new ExecProcess();
 			result = processService.process(pingCommnad, kubesprayBinHome, new String[] {"[WARNING]:"});
 		} catch (IOException e) {
 			logger.error("Node ping 테스트 실패");
 			logger.error("", e);
-			return false;
+			return ProcessResult.errorMessage("Node ping 테스트 실패.");
 		}
 		logger.info("Ping test result - exit code: {}", result.getExitCode());
 		logger.info("Ping test result - message: {}", result.getMessage());
@@ -97,26 +132,29 @@ public class KubesprayService implements IClusterService {
 		
 		if(result.getExitCode() != 0) {
 			logger.info("Ping test error.");
-			return false;
+			return ProcessResult.errorMessage("Ping test error.");
 		}
 		
 		
 		List<NodeCheckResult> resultList = parserPingTest(result);
 		for(NodeCheckResult r : resultList) {
 			if(!r.isStatus()) {
-				//하나의 노드라도 준비가 안되있으면 중지
-				return false;
+				//하나의 노드라도 준비가 안되있으면 중지				
+				return ProcessResult.errorMessage(String.format("Node가 준비되지 않았습니다. %s - %s", r.getNodeName(), r.getMessage()));
 			}
 		}
-		
-		
-		//클러스터 생성 커맨드 실행
-		String createCommnad = genCreateClusterCommand(inventoryFile.getAbsolutePath(), "root");
-		logger.info("Create cluster start.");
-		logger.info("Create cluster command: {}", createCommnad);
-		
-		
-		return true;
+		return ProcessResult.successMessage();
+	}
+	
+	@Override
+	public ProcessResult deleteCluster() {
+		return null;
+	}
+
+
+	@Override
+	public ProcessResult updateScale(CreateClusterInfo clusterInfo) {
+		return null;
 	}
 
 	
@@ -263,6 +301,12 @@ public class KubesprayService implements IClusterService {
 			}
 		}
 		return list.toArray(new String[list.size()]);
+	}
+
+
+	@Override
+	public void registerListener(Consumer<String> consumer) {
+		this.asyncService.register(consumer);
 	}
 	
 }

@@ -1,4 +1,4 @@
-package kr.co.sptek.paas.service;
+package kr.co.sptek.paas.service.kubespray;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -7,13 +7,11 @@ import java.io.InputStreamReader;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
 
 import kr.co.sptek.paas.model.ProcessResult;
 
-@Service
-public class ProcessService {	
-	private static Logger logger = LoggerFactory.getLogger(ProcessService.class);
+public class ExecProcess {	
+	private static Logger logger = LoggerFactory.getLogger(ExecProcessAsync.class);
 
 	public ProcessResult process(String command, String dir, String[] excludeWord) throws IOException {		
 		ProcessBuilder builder = new ProcessBuilder();

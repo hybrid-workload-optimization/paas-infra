@@ -6,8 +6,8 @@ import io.swagger.annotations.ApiModelProperty;
 @ApiModel("k8s Cluster 정보")
 public class Cluster {
 
-	@ApiModelProperty(value="name", required=true)
-	private String name;	
+	@ApiModelProperty(value="clusterName", required=true)
+	private String clusterName;	
 	
 	@ApiModelProperty(value="nodes", required=true)
 	private Node[] nodes;
@@ -15,11 +15,11 @@ public class Cluster {
 	@ApiModelProperty(value="provider", required=true)
 	private String provider;	
 	
-	public String getName() {
-		return name;
+	public String getClusterName() {
+		return clusterName;
 	}
-	public void setName(String name) {
-		this.name = name;
+	public void setClusterName(String clusterName) {
+		this.clusterName = clusterName;
 	}
 	public Node[] getNodes() {
 		return nodes;

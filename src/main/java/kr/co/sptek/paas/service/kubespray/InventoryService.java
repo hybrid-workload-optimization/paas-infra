@@ -1,4 +1,4 @@
-package kr.co.sptek.paas.service;
+package kr.co.sptek.paas.service.kubespray;
 
 import java.util.List;
 
@@ -8,7 +8,6 @@ import kr.co.sptek.paas.model.Cluster;
 import kr.co.sptek.paas.model.Node;
 import kr.co.sptek.paas.model.NodeType;
 
-@Service
 public class InventoryService {
 
 	public String genInventory(Cluster cluster) {
