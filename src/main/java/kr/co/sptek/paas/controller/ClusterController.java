@@ -36,7 +36,7 @@ public class ClusterController {
 			+"***입력부***\n"
 			+"```\n"
 			+"{\r\n"
-			+ "  \"name\": \"cluster1\",\r\n"
+			+ "  \"clusterName\": \"cluster1\",\r\n"
 			+ "  \"provider\": \"private\",\r\n"
 			+ "  \"userName\": \"root\",\r\n"
 			+ "  \"nodes\": [\r\n"
@@ -60,19 +60,12 @@ public class ClusterController {
 			+ "      \"name\": \"node3\",\r\n"
 			+ "      \"ip\": \"172.16.10.117\",\r\n"
 			+ "      \"nodeTypes\": [\r\n"
-			+ "        \"worker\"\r\n"
+			+ "        \"master\"\r\n"
 			+ "      ]\r\n"
 			+ "    },\r\n"
 			+ "    {\r\n"
 			+ "      \"name\": \"node4\",\r\n"
 			+ "      \"ip\": \"172.16.10.118\",\r\n"
-			+ "      \"nodeTypes\": [\r\n"
-			+ "        \"worker\"\r\n"
-			+ "      ]\r\n"
-			+ "    },\r\n"
-			+ "    {\r\n"
-			+ "      \"name\": \"node5\",\r\n"
-			+ "      \"ip\": \"172.16.10.119\",\r\n"
 			+ "      \"nodeTypes\": [\r\n"
 			+ "        \"worker\"\r\n"
 			+ "      ]\r\n"
@@ -126,7 +119,7 @@ public class ClusterController {
 					+ "      \"name\": \"node3\",\r\n"
 					+ "      \"ip\": \"172.16.10.117\",\r\n"
 					+ "      \"nodeTypes\": [\r\n"
-					+ "        \"worker\"\r\n"
+					+ "        \"master\"\r\n"
 					+ "      ]\r\n"
 					+ "    },\r\n"
 					+ "    {\r\n"
@@ -192,7 +185,7 @@ public class ClusterController {
 					+ "      \"name\": \"node3\",\r\n"
 					+ "      \"ip\": \"172.16.10.117\",\r\n"
 					+ "      \"nodeTypes\": [\r\n"
-					+ "        \"worker\"\r\n"
+					+ "        \"master\"\r\n"
 					+ "      ]\r\n"
 					+ "    },\r\n"
 					+ "    {\r\n"
@@ -235,146 +228,5 @@ public class ClusterController {
 		return Flux.create(sink -> {
 			clusterService.registryClusterJobLog(clusterName, sink::next);
         });
-	}
-	
-	
-	@GetMapping(path = "/cluster2")
-	public ProcessResult createCluster2() throws IOException {
-		Gson gson = new Gson();		
-		//String json = gson.toJson(param);
-		String json = "{\r\n"
-				+ "  \"clusterName\": \"cluster1\",\r\n"
-				+ "  \"provider\": \"private\",\r\n"
-				+ "  \"userName\": \"root\",\r\n"
-				+ "  \"nodes\": [\r\n"
-				+ "    {\r\n"
-				+ "      \"name\": \"node1\",\r\n"
-				+ "      \"ip\": \"172.16.10.115\",\r\n"
-				+ "      \"nodeTypes\": [\r\n"
-				+ "        \"master\"\r\n"
-				+ "      ]\r\n"
-				+ "    },\r\n"
-				+ "    {\r\n"
-				+ "      \"name\": \"node2\",\r\n"
-				+ "      \"ip\": \"172.16.10.116\",\r\n"
-				+ "      \"nodeTypes\": [\r\n"
-				+ "        \"master\"\r\n"
-				+ "      ]\r\n"
-				+ "    },\r\n"
-				+ "    {\r\n"
-				+ "      \"name\": \"node3\",\r\n"
-				+ "      \"ip\": \"172.16.10.117\",\r\n"
-				+ "      \"nodeTypes\": [\r\n"
-				+ "        \"master\"\r\n"
-				+ "      ]\r\n"
-				+ "    },\r\n"
-				+ "    {\r\n"
-				+ "      \"name\": \"node4\",\r\n"
-				+ "      \"ip\": \"172.16.10.118\",\r\n"
-				+ "      \"nodeTypes\": [\r\n"
-				+ "        \"worker\"\r\n"
-				+ "      ]\r\n"
-				+ "    }\r\n"
-				+ "  ]\r\n"
-				+ "}";
-		ClusterInfo clusterInfo = gson.fromJson(json, ClusterInfo.class);
-		
-		ProcessResult result = clusterService.createCluster(clusterInfo);		
-		return result;
-	}
-	
-	@GetMapping(path = "/reset2")
-	public ProcessResult resetCluster2() throws IOException {
-		Gson gson = new Gson();		
-		//String json = gson.toJson(param);
-		String json = "{\r\n"
-				+ "  \"clusterName\": \"cluster1\",\r\n"
-				+ "  \"provider\": \"private\",\r\n"
-				+ "  \"userName\": \"root\",\r\n"
-				+ "  \"nodes\": [\r\n"
-				+ "    {\r\n"
-				+ "      \"name\": \"node1\",\r\n"
-				+ "      \"ip\": \"172.16.10.115\",\r\n"
-				+ "      \"nodeTypes\": [\r\n"
-				+ "        \"master\"\r\n"
-				+ "      ]\r\n"
-				+ "    },\r\n"
-				+ "    {\r\n"
-				+ "      \"name\": \"node2\",\r\n"
-				+ "      \"ip\": \"172.16.10.116\",\r\n"
-				+ "      \"nodeTypes\": [\r\n"
-				+ "        \"master\"\r\n"
-				+ "      ]\r\n"
-				+ "    },\r\n"
-				+ "    {\r\n"
-				+ "      \"name\": \"node3\",\r\n"
-				+ "      \"ip\": \"172.16.10.117\",\r\n"
-				+ "      \"nodeTypes\": [\r\n"
-				+ "        \"master\"\r\n"
-				+ "      ]\r\n"
-				+ "    },\r\n"
-				+ "    {\r\n"
-				+ "      \"name\": \"node4\",\r\n"
-				+ "      \"ip\": \"172.16.10.118\",\r\n"
-				+ "      \"nodeTypes\": [\r\n"
-				+ "        \"worker\"\r\n"
-				+ "      ]\r\n"
-				+ "    }\r\n"
-				+ "  ]\r\n"
-				+ "}";
-		ClusterInfo clusterInfo = gson.fromJson(json, ClusterInfo.class);
-		ProcessResult result = clusterService.deleteCluster(clusterInfo);		
-		return result;
-	}
-	
-	@GetMapping(path = "/scale2")
-	public ProcessResult scaleCluster2() throws IOException {
-		Gson gson = new Gson();		
-		//String json = gson.toJson(param);
-		String json = "{\r\n"
-				+ "  \"clusterName\": \"cluster1\",\r\n"
-				+ "  \"provider\": \"private\",\r\n"
-				+ "  \"userName\": \"root\",\r\n"
-				+ "  \"nodes\": [\r\n"
-				+ "    {\r\n"
-				+ "      \"name\": \"node1\",\r\n"
-				+ "      \"ip\": \"172.16.10.115\",\r\n"
-				+ "      \"nodeTypes\": [\r\n"
-				+ "        \"master\"\r\n"
-				+ "      ]\r\n"
-				+ "    },\r\n"
-				+ "    {\r\n"
-				+ "      \"name\": \"node2\",\r\n"
-				+ "      \"ip\": \"172.16.10.116\",\r\n"
-				+ "      \"nodeTypes\": [\r\n"
-				+ "        \"master\"\r\n"
-				+ "      ]\r\n"
-				+ "    },\r\n"
-				+ "    {\r\n"
-				+ "      \"name\": \"node3\",\r\n"
-				+ "      \"ip\": \"172.16.10.117\",\r\n"
-				+ "      \"nodeTypes\": [\r\n"
-				+ "        \"master\"\r\n"
-				+ "      ]\r\n"
-				+ "    },\r\n"
-				+ "    {\r\n"
-				+ "      \"name\": \"node4\",\r\n"
-				+ "      \"ip\": \"172.16.10.118\",\r\n"
-				+ "      \"nodeTypes\": [\r\n"
-				+ "        \"worker\"\r\n"
-				+ "      ]\r\n"
-				+ "    },\r\n"
-				+ "    {\r\n"
-				+ "      \"name\": \"node5\",\r\n"
-				+ "      \"ip\": \"172.16.10.119\",\r\n"
-				+ "      \"nodeTypes\": [\r\n"
-				+ "        \"worker\"\r\n"
-				+ "      ]\r\n"
-				+ "    }\r\n"
-				+ "  ]\r\n"
-				+ "}";
-		ClusterInfo clusterInfo = gson.fromJson(json, ClusterInfo.class);
-		
-		return clusterService.updateScale(clusterInfo);
 	}
 }
