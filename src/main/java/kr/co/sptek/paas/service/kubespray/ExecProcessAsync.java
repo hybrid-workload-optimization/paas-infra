@@ -87,10 +87,11 @@ public class ExecProcessAsync {
 			String line = null;
 			try {
 				while ((line = reader.readLine()) != null) {
+					sbLog.append(String.format("%s\n", line));
+					logger.info(line);
+					
 					for(Consumer<String> c : listeners) {
-						c.accept(line);
-						sbLog.append(String.format("%s\n", line));
-						logger.info(line);
+						c.accept(line);	
 					}
 				}
 			} catch (IOException e) {

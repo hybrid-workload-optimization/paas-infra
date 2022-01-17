@@ -45,20 +45,20 @@ public class KubesprayService implements IClusterService {
 	
 	@Override
 	public ProcessResult createCluster(ClusterInfo clusterInfo) {
-		logger.info("Kubespray - Cluster 생성 시작.");
+		logger.info("Kubespray - Cluster 생성 시작. - {}", clusterInfo.getClusterName());
 		return kubesprayJob(clusterInfo, CREATE);
 	}
 	
 	@Override
 	public ProcessResult deleteCluster(ClusterInfo clusterInfo) {
-		logger.info("Kubespray - Cluster 삭제 시작.");
+		logger.info("Kubespray - Cluster 삭제 시작. - {}", clusterInfo.getClusterName());
 		return kubesprayJob(clusterInfo, DELETE);
 	}
 
 
 	@Override
 	public ProcessResult updateScale(ClusterInfo clusterInfo) {
-		logger.info("Kubespray - Cluster scale 업데이트 시작.");
+		logger.info("Kubespray - Cluster scale 업데이트 시작. - {}", clusterInfo.getClusterName());
 		return kubesprayJob(clusterInfo, SCALE);
 	}
 	
@@ -294,7 +294,7 @@ public class KubesprayService implements IClusterService {
 	 * @return
 	 */
 	private String genClusterResetCommand(String inventoryFilePath, String userName) {
-		return String.format("ansible-playbook -i %s -become --become-user=%s reset.yml", inventoryFilePath, userName);
+		return String.format("ansible-playbook -i %s -become --become-user=%s reset.yml --extra-vars \"reset_confirmation=yes\"", inventoryFilePath, userName);
 	}
 	
 	
