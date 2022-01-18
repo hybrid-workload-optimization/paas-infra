@@ -1,4 +1,4 @@
-package kr.co.sptek.paas.controller;
+package kr.co.sptek.paas.controller.cluster;
 
 import java.io.IOException;
 import java.util.Map;
